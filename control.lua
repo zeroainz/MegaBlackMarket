@@ -12,6 +12,7 @@ local content_select_order_id = nil
 local tax_pay = stg_tax_rate / 100
 local local_p = nil
 local recalculate_price = true
+local only_view_closed = true
 if stg_tax_enable == false then
     tax_pay = 0
 end
@@ -114,7 +115,17 @@ function get_price_quality(price, quality)
         return price * ((lvl / quality_muiltipliers[1]) ^ quality_muiltipliers[2])
     end
 end
-
+local function set_custom_price()
+    if settings.global['mbm-unkn-items-stg'].value then
+        local manual_res = str_split(settings.global['mbm-unkn-items-stg'].value, ';')
+        for _, item_str in pairs(manual_res) do
+            local split_str = str_split(item_str, '=')
+            local item_name = split_str[1]
+            local item_price = tonumber(split_str[2])
+            storage.prices[item_name].current = item_price
+        end
+    end
+end
 --------------------------------------------------------------------------------------
 function format_money(n)
     if n == nil then
@@ -510,15 +521,15 @@ local function update_objects_prices()
     storage.prices_computed = false
 
     -- if only_researched_items is on then remove all that arent researched
-    if not stg_unknown_tech then
-        for name, object in pairs(storage.prices) do
-            recipe = storage.item_recipes[name] or nil
-
-            if recipe ~= nil and game.forces.player.recipes[recipe.recipe].enabled == false then
-                storage.prices[name] = nil
-            end
-        end
-    end
+    --if not stg_unknown_tech then
+    --    for name, object in pairs(storage.prices) do
+    --        recipe = storage.item_recipes[name] or nil
+    --
+    --        if recipe ~= nil and game.forces.player.recipes[recipe.recipe].enabled == false then
+    --            storage.prices[name] = nil
+    --        end
+    --    end
+    --end
 
     return true
 end
@@ -610,7 +621,7 @@ local function init_gui_money_counter(player)
         if gui1 == nil then
             gui1 = gui_parent.add({ type = "flow", name = "flow_mbm", direction = "horizontal" })
             storage.market_money_gui[player.index] = {}
-            storage.market_money_gui[player.index].lbl_money_counter = gui1.add({ type = "button", name = "btn_money_counter", caption = format_money(storage.market_money) })
+            storage.market_money_gui[player.index].lbl_money_counter = gui1.add({ type = "button", name = "btn_money_counter", caption = format_money(storage.market_money) , tooltip='Click to open price watcher'})
             storage.market_money_gui[player.index].lbl_money_counter.style.height = 40
         end
         --storage.market_money_gui = storage.market_money_gui or { }
@@ -620,6 +631,7 @@ local function gui_money_counter_update()
     init_gui_money_counter(player)
     for i = 1, #storage.market_money_gui do
         storage.market_money_gui[i].lbl_money_counter.caption = format_money(storage.market_money)
+
     end
 end
 
@@ -982,21 +994,6 @@ local function swap_chests(input, output)
     input.clear_items_inside()
 end
 
-local resource_price = {
-    free = 0,
-    water = 0,
-    unknown = 10000,
-    ["wood"] = 51,
-    ["coal"] = 16,
-    ["stone"] = 27,
-    ["iron-ore"] = 50,
-    ["copper-ore"] = 50,
-    ["iron-plate"] = 91,
-    ["copper-ore"] = 50,
-    ["copper-plate"] = 93,
-    ["uranium-ore"] = 182,
-    ['crude-oil'] = 100
-}
 ----------------------------------------------------------------------
 local function draw_menu(market_p, player)
     local market = market_p
@@ -1165,8 +1162,8 @@ local function draw_menu(market_p, player)
 
     end
 end
-local function draw_elem_gui(market, player)
-    if next(market) == nil then
+local function draw_elem_gui(market, player, only_view)
+    if next(market) == nil and only_view == nil then
         return
     end
     if player.gui.screen['zra_elem_menu'] then
@@ -1177,8 +1174,6 @@ local function draw_elem_gui(market, player)
     if not storage.prices_computed then
         local main_window, item_table_holder, item_table
         main_window = gui_parent
-        -- main_window = main_window.add({type = "empty-widget", ignored_by_interaction="true", name = "main_window_drag_handle", style = "flib_titlebar_drag_handle"})
-
         main_window = main_window.add { type = 'table', column_count = 1 }
         local title_bar = main_window.add { type = "flow", direction = "horizontal" }
         main_window = main_window.add({ type = "frame", direction = "vertical" })
@@ -1186,34 +1181,38 @@ local function draw_elem_gui(market, player)
         title_bar.drag_target = gui_parent
 
         title_bar.add { type = "label", caption = "Choose :", style = "frame_title", ignored_by_interaction = true }
-
         title_bar.add { type = "empty-widget", style = "draggable_space_header" }.style.horizontally_stretchable = true
-
         title_bar.add { type = "sprite-button", name = "btn_close_elemsel", sprite = "utility/close_fat", style = "frame_action_button" }
-
-        local n = 1
 
         local table_tab = main_window.add({ type = 'table', column_count = 5 })
         local content_widget = main_window.add { type = "frame" }
-        --local content_widget = main_window.add { type = 'frame' ,style = 'slot_button_deep_frame' }
-
         content_widget = content_widget.add { type = 'frame', style = 'inside_shallow_frame' }
         content_widget = content_widget.add { type = 'frame', style = 'slot_button_deep_frame' }
-        n = 0
+
         local first_cat = nil
         local categorized_items = {}
-        local pair_obj = nil
-        if market.type == market_type.item then
-            pair_obj = prototypes.get_item_filtered({})
-        elseif market.type == market_type.fluid then
-            pair_obj = prototypes.get_fluid_filtered({})
+        local pair_obj = {}
+
+        if only_view then
+            for name, item in pairs(prototypes.get_item_filtered({})) do
+                pair_obj[name] = item
+            end
+            for name, fluid in pairs(prototypes.get_fluid_filtered({})) do
+                pair_obj[name] = fluid
+            end
+        else
+            if market.type == market_type.item then
+                pair_obj = prototypes.get_item_filtered({})
+            elseif market.type == market_type.fluid then
+                pair_obj = prototypes.get_fluid_filtered({})
+            end
         end
-        new_price = {}
+
         for name, item in pairs(pair_obj) do
-            local is_fluid = (market.type == market_type.fluid)
+            local is_fluid = prototypes.fluid[name] ~= nil
             local recipe = player.force.recipes[name]
             local unlocked = false
-            if stg_unknown_tech then
+            if stg_unknown_tech or only_view then
                 unlocked = true
             else
                 if recipe and recipe.enabled then
@@ -1262,50 +1261,40 @@ local function draw_elem_gui(market, player)
             if unlocked then
                 local group = item.group.name
                 local subgroup = item.subgroup.name
+                if group ~= 'other' then
+                    categorized_items[group] = categorized_items[group] or {}
+                    categorized_items[group][subgroup] = categorized_items[group][subgroup] or {}
 
-                categorized_items[group] = categorized_items[group] or {}
-                categorized_items[group][subgroup] = categorized_items[group][subgroup] or {}
+                    if first_cat == nil then
+                        first_cat = group
+                    end
 
-                if first_cat == nil then
-                    first_cat = group
+                    table.insert(categorized_items[group][subgroup], item)
+
                 end
-
-                table.insert(categorized_items[group][subgroup], item)
             end
         end
 
         content_list = {}
         for group_name, subgroups in pairs(categorized_items) do
-            if market.type == market_type.item then
-                local btn = table_tab.add { type = "sprite-button", name = 'mbm_btn_cat_sel=' .. group_name, sprite = "item-group/" .. group_name }
-                btn.style.height = 100
-                btn.style.width = 100
-            elseif market.type == market_type.fluid then
+            local btn = table_tab.add { type = "sprite-button", name = 'mbm_btn_cat_sel=' .. group_name, sprite = "item-group/" .. group_name }
+            btn.style.height = 100
+            btn.style.width = 100
 
-                local btn = table_tab.add { type = "sprite-button", name = 'mbm_btn_cat_sel=' .. group_name, sprite = "item-group/" .. group_name }
-                btn.style.height = 100
-                btn.style.width = 100
-            end
             local tab_content = content_widget.add { type = "scroll-pane", name = group_name .. "_scroll_pane" }
             local tab_content1 = tab_content.add { type = 'frame', style = 'inside_shallow_frame', direction = 'vertical', vertical_scroll_policy = 'auto' }
             local tab_content2 = tab_content1.add { type = 'frame', style = 'slot_button_deep_frame', direction = 'vertical', vertical_scroll_policy = 'auto' }
-            if market.type == market_type.item then
-                tab_content.style.maximal_height = 400
-                tab_content.style.minimal_height = 400
-                tab_content.style.minimal_width = 490
-                tab_content2.style.minimal_width = 490
-                tab_content2.style.minimal_height = 400
-            elseif market.type == market_type.fluid then
-                tab_content.style.maximal_height = 200
-                tab_content.style.minimal_height = 200
-                tab_content.style.minimal_width = 490
-                tab_content2.style.minimal_width = 490
-                tab_content2.style.minimal_height = 200
-            end
-            local tab_content3 = tab_content2.add({ type = 'table', column_count = 1 })
 
+            tab_content.style.maximal_height = only_view and 600 or (market.type == market_type.item and 400 or 200)
+            tab_content.style.minimal_height = only_view and 600 or (market.type == market_type.item and 400 or 200)
+            tab_content.style.minimal_width = 490
+            tab_content2.style.minimal_width = 490
+            tab_content2.style.minimal_height = tab_content.style.minimal_height
+
+            local tab_content3 = tab_content2.add({ type = 'table', column_count = 1 })
             tab_content3.style.top_margin = 0
             tab_content3.style.vertical_spacing = 0
+
             for subgroup_name, items in pairs(subgroups) do
                 local subgroup_frame = tab_content3.add({ type = 'table', column_count = 10 })
                 subgroup_frame.style.top_margin = 0
@@ -1319,16 +1308,18 @@ local function draw_elem_gui(market, player)
                     if storage.prices[item.name] then
                         oldprice = storage.prices[item.name].current
                     end
-                    local price_txt = format_money(oldprice) --..format_money(calculate_item_price(item.name,0,player))
-                    if market.type == market_type.item then
-                        subgroup_frame.add({ type = "sprite-button", name = "mbm_btn_sel_elem=" .. item.name, sprite = "item/" .. item.name, style = 'slot_button', tooltip = { '', price_txt, ' - ', item.localised_name } })
-                    elseif market.type == market_type.fluid then
-
-                        subgroup_frame.add({ type = "sprite-button", name = "mbm_btn_sel_elem=" .. item.name, sprite = "fluid/" .. item.name, style = 'slot_button', tooltip = { '', price_txt, ' - ', item.localised_name } })
-                    end
-                    --                                 tooltip = format_money(price.current) })
+                    local price_txt = format_money(oldprice)
+                    local sprite_type = prototypes.fluid[item.name] and "fluid" or "item"
+                    subgroup_frame.add({
+                        type = "sprite-button",
+                        name = "mbm_btn_sel_elem=" .. item.name,
+                        sprite = sprite_type .. "/" .. item.name,
+                        style = 'slot_button',
+                        tooltip = { '', price_txt, ' - ', item.localised_name }
+                    })
                 end
             end
+
             content_list[group_name] = content_list[group_name] or { tab_content, tab_content1, tab_content2, tab_content3 }
             tab_content.visible = false
             tab_content1.visible = false
@@ -1337,13 +1328,18 @@ local function draw_elem_gui(market, player)
         end
         set_content_visible(first_cat, true)
     end
-
 end
+
 --------------------------------------------------------------------------------------
 local function open_gui_event(event)
+
     local player = game.players[event.player_index]
     local surface = game.players[event.player_index].physical_surface
     local force = game.players[event.player_index].force
+
+    if player.gui.screen['zra_elem_menu'] then
+        player.gui.screen['zra_elem_menu'].destroy()
+    end
     if event.entity ~= nil then
         if storage.market_list ~= nil then
             if storage.market_list[event.entity.unit_number] ~= nil then
@@ -1366,6 +1362,7 @@ local function open_gui_event(event)
                 else
                     signals_enable = market.entity.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)
                 end
+
                 market_opened = market
                 draw_menu(market, player)
                 if signals_enable then
@@ -1490,6 +1487,8 @@ local function show_custom_tooltip(player, item_stack)
             else
                 storage.market_money_gui[player.index].lbl_money_counter.caption = format_money(get_price_quality(storage.prices[item_stack.name].current, 0))
             end
+
+            storage.market_money_gui[player.index].lbl_money_counter.tooltip='Click to open price watcher'
         end
     end
 end
@@ -1514,9 +1513,38 @@ local function on_click(event)
     local catsplit = str_split(event.element.name, '=')
     local catbtn = catsplit[1] or nil
     local cat_id = catsplit[2] or nil
+    if btn == 'btn_money_counter' and market_opened == nil then
 
-    if player.gui.screen['zra_elem_menu'] then
+        if player.gui.screen['zra_elem_menu'] then
+            player.gui.screen['zra_elem_menu'].destroy()
+        end
+        if player.gui.relative["zra_market_menu"] then
+            player.gui.relative["zra_market_menu"].destroy()
+        end
+        player.opened = nil
+        market_opened = nil
+        draw_elem_gui({}, player, true)
+    end
+    if catbtn == 'mbm_btn_cat_sel' then
+        if player.gui.screen['zra_elem_menu'] then
+            if content_list then
+                for category, _ in pairs(content_list) do
 
+                    set_content_visible(category, false)
+                    --content_list[category].visible = false
+                end
+                --content_list[cat_id].visible = true
+                set_content_visible(cat_id, true)
+
+            end
+        end
+    end
+
+    if btn == 'btn_close_elemsel' then
+
+        if player.gui.screen['zra_elem_menu'] then
+            player.gui.screen['zra_elem_menu'].destroy()
+        end
     end
     if market_opened == nil then
         return
@@ -1598,20 +1626,7 @@ local function on_click(event)
     if btn == 'btn_mbm_elmnt_signal_activate_b' then
         market_opened.signal_automatic_b = event.element.elem_value
     end
-    if catbtn == 'mbm_btn_cat_sel' then
-        if player.gui.screen['zra_elem_menu'] then
-            if content_list then
-                for category, _ in pairs(content_list) do
 
-                    set_content_visible(category, false)
-                    --content_list[category].visible = false
-                end
-                --content_list[cat_id].visible = true
-                set_content_visible(cat_id, true)
-
-            end
-        end
-    end
     if catbtn == 'mbm_btn_sel_elem' then
         if player.gui.screen['zra_elem_menu'] and player.gui.relative['zra_market_menu'] then
             if market_opened.type == market_type.item then
@@ -1629,13 +1644,8 @@ local function on_click(event)
 
         end
     end
-    if btn == 'btn_close_elemsel' then
-        if player.gui.screen['zra_elem_menu'] then
-            player.gui.screen['zra_elem_menu'].destroy()
-        end
-    end
     if btn == 'btn_mbm_elmnt' then
-        draw_elem_gui(market_opened, player)
+        draw_elem_gui(market_opened, player, nil)
         content_select_order_id = order_id
         --if event.element.elem_value ~= market_opened.orders[order_id].item then
         --    if market_opened.type ~= market_type.energy then
@@ -1931,6 +1941,7 @@ local function on_tick(event)
     storage.tick = storage.tick + 1
     if recalculate_price then
         recalculate_price = false
+
         update_techs_costs()
         update_objects_prices()
     end
