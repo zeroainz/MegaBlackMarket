@@ -88,6 +88,13 @@ data:extend({
         order = "aa"
     },
     {
+        type = "bool-setting",
+        name = "mbm-unkn-qlt-stg",
+        setting_type = "runtime-global",
+        default_value = true,
+        order = "aa"
+    },
+    {
         type = "int-setting",
         name = "mbm-time-ck-stg",
         setting_type = "runtime-global",

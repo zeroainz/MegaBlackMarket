@@ -38,6 +38,7 @@ function configure_settings()
             end
         end
     end
+    unknown_quality_enable = settings.global['mbm-unkn-qlt-stg'].value
     vanilla_quality_prices = {
         settings.global["mbm-qlt-1-stg"].value,
         settings.global["mbm-qlt-2-stg"].value,

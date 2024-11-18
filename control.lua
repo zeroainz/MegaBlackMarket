@@ -69,19 +69,19 @@ local function fill_quality_type()
     local quality_tier_counter = 1
     for name, proto in pairs(prototypes.quality) do
         if #prototypes.quality == 5 then
-            if proto.name == 'normal' then
+            if proto.name == 'normal'  then
                 quality_type[proto.name] = 1
                 quality_type[1] = proto.name
-            elseif proto.name == 'uncommon' then
+            elseif proto.name == 'uncommon'  then
                 quality_type[proto.name] = 2
                 quality_type[2] = proto.name
-            elseif proto.name == 'rare' then
+            elseif proto.name == 'rare'then
                 quality_type[proto.name] = 3
                 quality_type[3] = proto.name
-            elseif proto.name == 'epic' then
+            elseif proto.name == 'epic'  then
                 quality_type[proto.name] = 4
                 quality_type[4] = proto.name
-            elseif proto.name == 'normal' then
+            elseif proto.name == 'normal'  then
                 quality_type[proto.name] = 5
                 quality_type[5] = proto.name
             end
@@ -653,7 +653,7 @@ local function gui_update_prices(market)
     end
     market.gui_lbl_orders_total.caption = { '', { "mbm-gui-lbl-total-orders" }, ' ' .. format_money(total + (total * tax_pay)) .. '  incl.(tax : ' .. format_money(total * tax_pay) .. ')' }
 end
-local function gui_add_order(market, order)
+local function gui_add_order(market, order,player)
     local gui = market.gui_orders_table
     local item = order.item
     local quantity = order.quantity
@@ -701,7 +701,9 @@ local function gui_add_order(market, order)
         local items_dropdown = {}
 
         for i = 1, #quality_type do
-            table.insert(items_dropdown, i, '[quality=' .. quality_type[i] .. ']')
+            if player.force.is_quality_unlocked(quality_type[i]) or unknown_quality_enable then
+                table.insert(items_dropdown, i, '[quality=' .. quality_type[i] .. ']')
+            end
         end
 
         if next(items_dropdown) == nil then
@@ -719,16 +721,16 @@ local function gui_add_order(market, order)
     order.price_label = gui.add({ type = "label", name = 'lbl_mbm_curprice-' .. string.format("%4d", id), caption = format_money(current) .. " " .. format_evolution(evol) })
     market.orders[order.id] = order
 end
-local function gui_add_new_order(market)
+local function gui_add_new_order(market,player)
     local gui = market.gui_orders_table
     local orders = market.orders or {}
     local n = #orders + 1
     orders[n] = { item = 'wooden-chest', quantity = 1, quality = 1, id = n }
     market.orders = orders
-    gui_add_order(market, orders[n])
+    gui_add_order(market, orders[n],player)
 
 end
-local function gui_update_orders(market)
+local function gui_update_orders(market,player)
 
     if market.type == market_type.fluid then
         local orders = market.orders or {}
@@ -747,7 +749,7 @@ local function gui_update_orders(market)
     if market.orders ~= nil then
         for id = 1, #market.orders do
             market.orders[id].id = id
-            gui_add_order(market, market.orders[id])
+            gui_add_order(market, market.orders[id],player)
         end
         gui_update_prices(market)
     end
@@ -987,6 +989,9 @@ local function set_content_visible(group_name, state)
     end
 end
 local function swap_chests(input, output)
+    if true then
+        return
+    end
     local inv_input = input.get_inventory(defines.inventory.chest)
     local inv_output = output.get_inventory(defines.inventory.chest)
     output.clear_items_inside()
@@ -1160,7 +1165,7 @@ local function draw_menu(market_p, player)
             el5.style.width = 50
 
             market.gui_orders_table = gui2
-            gui_update_orders(market)
+            gui_update_orders(market,player)
         end
 
     end
@@ -1369,13 +1374,13 @@ local function open_gui_event(event)
                 local market = storage.market_list[event.entity.unit_number]
                 if market.type == market_type.item then
                     if market.main_chest == nil then
-                        local swap_entity = surface.create_entity({ name = event.entity.name, position = { x = event.entity.position.x, y = event.entity.position.y }, force = force })
-                        swap_entity.destructible = false
-                        swap_entity.minable = false
-                        swap_chests(market.entity, swap_entity)
-                        player.opened = swap_entity
+                        --local swap_entity = surface.create_entity({ name = event.entity.name, position = { x = event.entity.position.x + 1, y = event.entity.position.y + 1 }, force = force })
+                        --swap_entity.destructible = false
+                        --swap_entity.minable = false
+                        --swap_chests(market.entity, swap_entity)
+                        --player.opened = market.entity
                         market.main_chest = market.entity
-                        market.entity = swap_entity
+                        market.entity = market.entity
 
                     end
                 end
@@ -1423,11 +1428,11 @@ local function close_gui_event(event)
                 if player.gui.relative["zra_market_menu"] then
                     player.gui.relative["zra_market_menu"].destroy()
                     if market_opened.type == market_type.item then
-                        swap_chests(market_opened.entity, market_opened.main_chest)
-                        market_opened.entity.destructible = true
-                        market_opened.entity.minable = true
-                        market_opened.entity.destroy()
-                        market_opened.entity = nil
+                        --swap_chests(market_opened.entity, market_opened.main_chest)
+                        --market_opened.entity.destructible = true
+                        --market_opened.entity.minable = true
+                        --market_opened.entity.destroy()
+                        --market_opened.entity = nil
                         market_opened.entity = market_opened.main_chest
                         market_opened.main_chest = nil
 
@@ -1614,19 +1619,19 @@ local function on_click(event)
     end
 
     if btn == 'btn_mbm_new_order' then
-        gui_add_new_order(market_opened)
+        gui_add_new_order(market_opened,player)
         gui_update_prices(market_opened)
     end
     if btn == 'btn_mbm_delete_order' then
         gui_clear(market_opened.gui_orders_table)
         table.remove(market_opened.orders, order_id)
-        gui_update_orders(market_opened)
+        gui_update_orders(market_opened,player)
         gui_update_prices(market_opened)
     end
     if btn == 'btn_mbm_wipe_order' then
         market_opened.orders = {}
         gui_clear(market_opened.gui_orders_table)
-        gui_update_orders(market_opened)
+        gui_update_orders(market_opened,player)
     end
     if btn == 'btn_mbm_buy' then
         gui_buy(market_opened)
@@ -1942,11 +1947,11 @@ local function on_tick(event)
     elseif storage.tick % 3 == 1 then
         if market_opened then
             local signals_enable = nil
-            if market_opened.type == market_type.item then
-                signals_enable = market_opened.main_chest.get_circuit_network(defines.wire_connector_id.circuit_red) or market_opened.main_chest.get_circuit_network(defines.wire_connector_id.circuit_green)
-            else
-                signals_enable = market_opened.entity.get_circuit_network(defines.wire_connector_id.circuit_red) or market_opened.entity.get_circuit_network(defines.wire_connector_id.circuit_green)
-            end
+            --if market_opened.type == market_type.item then
+            --    signals_enable = market_opened.main_chest.get_circuit_network(defines.wire_connector_id.circuit_red) or market_opened.main_chest.get_circuit_network(defines.wire_connector_id.circuit_green)
+            --else
+            signals_enable = market_opened.entity.get_circuit_network(defines.wire_connector_id.circuit_red) or market_opened.entity.get_circuit_network(defines.wire_connector_id.circuit_green)
+            --end
             if market_opened.signal_cbx_auto_trade == true then
                 if signals_enable ~= nil then
                     market_opened.signal_gui_radio_circuit.enabled = true
@@ -2027,12 +2032,13 @@ script.on_event(defines.events.on_tick, on_tick)
 
 -------------------------------------------------------------------------------------
 local function configure_settings_local()
+    configure_settings()
     fill_quality_type()
     tax_pay = stg_tax_rate / 100
     if stg_tax_enable == false then
         tax_pay = 0
     end
-    configure_settings()
+    init_storages()
     update_objects_prices_start()
     update_objects_prices()
     update_groups()

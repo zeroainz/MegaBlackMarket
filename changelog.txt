@@ -1,3 +1,11 @@
+Version: 1.0.12
+Date: 2024-11-18
+  Changes:
+    -   ADDED ABILITY TO DISABLE AND ENABLE THE PURCHASE OF UNRESEARCHED QUALITES
+    -   FIXED BUG WITH INVINCIBLE CHEST
+    -   FIXED PRICE UPDATING AFTER SETTINGS CHAGNE
+    -   FIXED CRASH ERROR AFTER TAX SETTING CHANGE
+---------------------------------------------------------------------------------------------------
 Version: 1.0.11
 Date: 2024-11-17
   Changes:
