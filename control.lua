@@ -1836,7 +1836,9 @@ local function calculate_condition(el1, el2, condition)
     return false
 end
 local function calculate_signal_value(signal, market)
-
+    if signal == nil then
+        return 0
+    end
     local afc = market.signal_cbx_auto_circuit or false
     if afc then
         local signals = market.entity.get_signals(defines.wire_connector_id.circuit_red, defines.wire_connector_id.circuit_green)

@@ -1,3 +1,8 @@
+Version: 1.0.13
+Date: 2024-11-18
+  Changes:
+    -   FIXED BUG WITH AUTOMATIC FUNCTION AND NO SIGNAL INPUT SELECTED
+---------------------------------------------------------------------------------------------------
 Version: 1.0.12
 Date: 2024-11-18
   Changes:
