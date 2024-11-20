@@ -98,17 +98,9 @@ data:extend({
         type = "int-setting",
         name = "mbm-time-ck-stg",
         setting_type = "runtime-global",
-        minimum_value = 30,
+        minimum_value = 5,
         maximal_value = 360,
         default_value = 30,
-        order = "ab"
-    },
-    {
-        type = "string-setting",
-        name = "mbm-unkn-items-stg",
-        setting_type = "runtime-global",
-        allow_blank = true,
-        default_value = "",
         order = "ab"
     },
     {

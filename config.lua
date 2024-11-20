@@ -27,17 +27,6 @@ function configure_settings()
         ["uranium-ore"] = settings.global["BM2-uranium_price"].value,
     }
 
-    if settings.global['mbm-unkn-items-stg'].value then
-        local manual_res = str_split(settings.global['mbm-unkn-items-stg'].value, ';')
-        for _, item_str in pairs(manual_res) do
-            local split_str = str_split(item_str, '=')
-            local item_name = split_str[1]
-            local item_price = tonumber(split_str[2])
-            if item_name and item_name ~= '' then
-                vanilla_resources_prices[item_name] = item_price
-            end
-        end
-    end
     unknown_quality_enable = settings.global['mbm-unkn-qlt-stg'].value
     vanilla_quality_prices = {
         settings.global["mbm-qlt-1-stg"].value,
