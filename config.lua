@@ -26,7 +26,8 @@ function configure_settings()
         ["crude-oil"] = settings.global["BM2-oil_price"].value,
         ["uranium-ore"] = settings.global["BM2-uranium_price"].value,
     }
-
+    craft_it_to_buy_stg = settings.global['mbm-craft-to-buy-stg'].value
+    --craft_it_to_qlt_stg = settings.global['mbm-craft-to-buy-only-qlt-stg'].value
     unknown_quality_enable = settings.global['mbm-unkn-qlt-stg'].value
     vanilla_quality_prices = {
         settings.global["mbm-qlt-1-stg"].value,

@@ -7,7 +7,7 @@ data:extend({
         minimum_value = 1,
         maximal_value = 100,
         default_value = 1,
-        order = "aa"
+        order = "ba"
     },
     {
         type = "int-setting",
@@ -16,7 +16,7 @@ data:extend({
         minimum_value = 1,
         maximal_value = 100,
         default_value = 2,
-        order = "aa"
+        order = "bb"
     },
     {
         type = "int-setting",
@@ -25,7 +25,7 @@ data:extend({
         minimum_value = 1,
         maximal_value = 100,
         default_value = 4,
-        order = "aa"
+        order = "bc"
     },
     {
         type = "int-setting",
@@ -34,7 +34,7 @@ data:extend({
         minimum_value = 1,
         maximal_value = 100,
         default_value = 7,
-        order = "aa"
+        order = "bd"
     },
     {
         type = "int-setting",
@@ -43,7 +43,7 @@ data:extend({
         minimum_value = 1,
         maximal_value = 100,
         default_value = 10,
-        order = "aa"
+        order = "be"
     },
     {
         type = "int-setting",
@@ -52,7 +52,7 @@ data:extend({
         minimum_value = 1,
         maximal_value = 20,
         default_value = 2,
-        order = "aa"
+        order = "bf"
     },
     {
         type = "int-setting",
@@ -61,7 +61,7 @@ data:extend({
         minimum_value = 1,
         maximal_value = 20,
         default_value = 3,
-        order = "aa"
+        order = "bg"
     },
     -- Basic prices
     {
@@ -69,7 +69,7 @@ data:extend({
         name = "mbm-tax-enable-stg",
         setting_type = "runtime-global",
         default_value = true,
-        order = "aa"
+        order = "af"
     },
     {
         type = "int-setting",
@@ -78,7 +78,7 @@ data:extend({
         minimum_value = 0,
         maximal_value = 99,
         default_value = 21,
-        order = "ab"
+        order = "ag"
     },
     {
         type = "bool-setting",
@@ -89,10 +89,17 @@ data:extend({
     },
     {
         type = "bool-setting",
+        name = "mbm-craft-to-buy-stg",
+        setting_type = "runtime-global",
+        default_value = false,
+        order = "ac"
+    },
+    {
+        type = "bool-setting",
         name = "mbm-unkn-qlt-stg",
         setting_type = "runtime-global",
         default_value = true,
-        order = "aa"
+        order = "ab"
     },
     {
         type = "int-setting",
@@ -101,7 +108,7 @@ data:extend({
         minimum_value = 5,
         maximal_value = 360,
         default_value = 30,
-        order = "ab"
+        order = "ae"
     },
     {
         type = "int-setting",
@@ -109,7 +116,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 30,
-        order = "ac"
+        order = "sp"
     },
     {
         type = "int-setting",
@@ -117,7 +124,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 0,
-        order = "ad"
+        order = "sq"
     },
     {
         type = "int-setting",
@@ -125,7 +132,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 0,
-        order = "ae"
+        order = "sr"
     },
     {
         type = "int-setting",
@@ -133,7 +140,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 20,
-        order = "af"
+        order = "ss"
     },
 
     -- Vanilla resources
@@ -143,7 +150,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 0,
-        order = "ba"
+        order = "st"
     },
     {
         type = "int-setting",
@@ -151,7 +158,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 16,
-        order = "bb"
+        order = "su"
     },
     {
         type = "int-setting",
@@ -159,7 +166,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 27,
-        order = "bc"
+        order = "sv"
     },
     {
         type = "int-setting",
@@ -167,7 +174,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 19,
-        order = "bd"
+        order = "sw"
     },
     {
         type = "int-setting",
@@ -175,7 +182,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 21,
-        order = "be"
+        order = "sx"
     },
     {
         type = "int-setting",
@@ -183,7 +190,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 182,
-        order = "be"
+        order = "sy"
     },
     {
         type = "int-setting",
@@ -191,7 +198,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 100,
-        order = "bf"
+        order = "sz"
     },
 
     -- special manually declared prices
@@ -201,7 +208,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 1,
-        order = "cb"
+        order = "ta"
     },
     {
         type = "int-setting",
@@ -209,7 +216,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 51,
-        order = "cc"
+        order = "ta"
     },
     {
         type = "int-setting",
@@ -217,7 +224,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 30,
-        order = "cca"
+        order = "ta"
     },
     {
         type = "int-setting",
@@ -225,7 +232,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 100,
-        order = "cd"
+        order = "ud"
     },
 
     -- other prices
@@ -236,7 +243,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 500,
-        order = "ea"
+        order = "va"
     },
     {
         type = "int-setting",
@@ -244,7 +251,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 20,
-        order = "eb"
+        order = "wb"
     },
     {
         type = "int-setting",
@@ -252,7 +259,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 1000,
-        order = "ec"
+        order = "xc"
     },
     {
         type = "double-setting",
@@ -260,7 +267,7 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 0,
         default_value = 0.001,
-        order = "ed"
+        order = "yd"
     },
     -- other
     {
@@ -269,6 +276,6 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 1,
         default_value = 10,
-        order = "ga"
+        order = "za"
     }
 })

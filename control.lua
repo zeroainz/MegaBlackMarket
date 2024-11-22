@@ -13,8 +13,10 @@ local tax_pay = stg_tax_rate / 100
 local local_p = nil
 local recalculate_price = true
 local modify_item_enabled_admin = false
+local modify_item_enabled_action = false
 local modify_price_admin = false
 local opened_price_watcher = false
+local version = '1.1.1'
 if stg_tax_enable == false then
     tax_pay = 0
 end
@@ -88,7 +90,7 @@ local function fill_quality_type()
             end
         else
             if proto.name ~= 'quality-unknown' then
-                quality_type[proto.name] = proto.level
+                quality_type[proto.name] = quality_tier_counter
                 quality_type[quality_tier_counter] = proto.name
                 --print('lvl : '..proto.level .. '    name : '..proto.name)
                 quality_tier_counter = quality_tier_counter + 1
@@ -579,16 +581,16 @@ local function init_storages()
 
     storage.tick = storage.tick or 0
     local custom_disable_items = {}
-    custom_disable_items['blueprint']=1
-    custom_disable_items['deconstruction-planner']=1
-    custom_disable_items['upgrade-planner']=1
-    custom_disable_items['blueprint-book']=1
-    custom_disable_items['copy-paste-tool']=1
-    custom_disable_items['cut-paste-tool']=1
-    custom_disable_items['empty-module-slot']=1
-    custom_disable_items['coin']=1
-    custom_disable_items['science']=1
-    custom_disable_items['ucoin']=1
+    custom_disable_items['blueprint'] = 1
+    custom_disable_items['deconstruction-planner'] = 1
+    custom_disable_items['upgrade-planner'] = 1
+    custom_disable_items['blueprint-book'] = 1
+    custom_disable_items['copy-paste-tool'] = 1
+    custom_disable_items['cut-paste-tool'] = 1
+    custom_disable_items['empty-module-slot'] = 1
+    custom_disable_items['coin'] = 1
+    custom_disable_items['science'] = 1
+    custom_disable_items['ucoin'] = 1
     storage.market_black_list = storage.market_black_list or custom_disable_items
     storage.item_recipes = {}
 
@@ -728,7 +730,15 @@ local function gui_add_order(market, order, player)
 
         for i = 1, #quality_type do
             if player.force.is_quality_unlocked(quality_type[i]) or unknown_quality_enable then
-                table.insert(items_dropdown, i, '[quality=' .. quality_type[i] .. ']')
+                if order.max_quality == nil then
+                    table.insert(items_dropdown, i, '[quality=' .. quality_type[i] .. ']')
+                else
+                    if i < order.max_quality then
+                        table.insert(items_dropdown, i, '[quality=' .. quality_type[i] .. ']')
+                    else
+                        break
+                    end
+                end
             end
         end
 
@@ -741,6 +751,7 @@ local function gui_add_order(market, order, player)
         end
         local drp_mbm_qlt = gui.add({ type = "drop-down", name = "drp_mbm_qlt-" .. string.format("%4d", id), items = items_dropdown, selected_index = order.quality })
         drp_mbm_qlt.style.maximal_width = 70
+        order.drop_down_element = drp_mbm_qlt
     else
         gui.add({ type = 'label', name = 'lbl_fld_empty2' .. string.format("%4d", id) })
     end
@@ -751,7 +762,11 @@ local function gui_add_new_order(market, player)
     local gui = market.gui_orders_table
     local orders = market.orders or {}
     local n = #orders + 1
-    orders[n] = { item = 'wooden-chest', quantity = 1, quality = 1, id = n }
+    orders[n] = { item = 'wooden-chest', quantity = 1, quality = 1, max_quality = nil, id = n }
+
+    if craft_it_to_buy_stg then
+        orders[n].max_quality = storage.craft_to_unlock[orders[n].item] or 1
+    end
     market.orders = orders
     gui_add_order(market, orders[n], player)
 
@@ -1219,24 +1234,30 @@ local function draw_elem_gui(market, player, only_view, black_list_edit, locatio
         main_window = main_window.add({ type = "frame", direction = "vertical" })
         main_window.style.minimal_width = 380
         title_bar.drag_target = gui_parent
+        local ttBar = nil
         if only_view then
-            title_bar.add { type = "label", caption = "Price Watcher :", style = "frame_title", ignored_by_interaction = true }
+            ttBar = title_bar.add { type = "label", caption = "Price Watcher :", style = "frame_title", ignored_by_interaction = true }
         else
-            title_bar.add { type = "label", caption = "Choose :", style = "frame_title", ignored_by_interaction = true }
+            ttBar = title_bar.add { type = "label", caption = "Choose :", style = "frame_title", ignored_by_interaction = true }
         end
         title_bar.add { type = "empty-widget", style = "draggable_space_header" }.style.horizontally_stretchable = true
         if player.admin and only_view and not black_list_edit then
             title_bar.add { type = "sprite-button", name = "btn_settings_elemsel", sprite = "mbm-stg-spr", style = "frame_action_button", tooltip = { 'mbm-gui-hide-stg-e' } }
             --mbm-price-stg-reset-spr
+
+        end
+        if player.admin and only_view and black_list_edit then
+            --mbm-item-dsbl-stg
+            ttBar.caption = 'Price Watcher : Settings Edit'
+            title_bar.add { type = "sprite-button", name = "btn_settings_elemsel", sprite = "mbm-stg-spr-e", style = "frame_action_button", tooltip = { 'mbm-gui-hide-stg-d' } }
+            title_bar.add { type = "sprite-button", name = "btn_price_load_save_elemsel", sprite = "utility/import", style = "frame_action_button", tooltip = { 'mbm-gui-elem-import-export' } }
             title_bar.add { type = "sprite-button", name = "btn_price_settings_reset_elemsel", sprite = "mbm-price-stg-reset-spr", style = "frame_action_button", tooltip = { 'mbm-gui-elem-price-reset' } }
+            title_bar.add { type = "sprite-button", name = "btn_settings_hide_item", sprite = "mbm-item-dsbl-stg", style = "frame_action_button", tooltip = { 'mbm-gui-item-hide' } }
             if modify_price_admin then
                 title_bar.add { type = "sprite-button", name = "btn_price_settings_elemsel", sprite = "mbm-price-stg-spr-e", style = "frame_action_button", tooltip = { 'mbm-gui-elem-price-modify' } }
             else
                 title_bar.add { type = "sprite-button", name = "btn_price_settings_elemsel", sprite = "mbm-price-stg-spr", style = "frame_action_button", tooltip = { 'mbm-gui-elem-price-modify' } }
             end
-        end
-        if player.admin and only_view and black_list_edit then
-            title_bar.add { type = "sprite-button", name = "btn_settings_elemsel", sprite = "mbm-stg-spr-e", style = "frame_action_button", tooltip = { 'mbm-gui-hide-stg-d' } }
         end
         title_bar.add { type = "sprite-button", name = "btn_close_elemsel", sprite = "utility/close_fat", style = "frame_action_button" }
 
@@ -1372,16 +1393,25 @@ local function draw_elem_gui(market, player, only_view, black_list_edit, locatio
                     if not black_list_edit then
                         number = nil
                     end
+                    local craft_it = true
+                    if craft_it_to_buy_stg then
+                        storage.craft_to_unlock = storage.craft_to_unlock or {}
+                        if not storage.craft_to_unlock[item.name] then
+                            craft_it = false
+                        end
+                    end
                     if not storage.market_black_list[item.name] or black_list_edit then
-                        local x = subgroup_frame.add({
-                            type = "sprite-button",
-                            name = "mbm_btn_sel_elem=" .. item.name,
-                            sprite = sprite_type .. "/" .. item.name,
-                            style = 'slot_button',
-                            number = number,
-                            tooltip = { '', price_txt, ' - ', item.localised_name }
-                        })
-                        price_sprite_button_list[item.name] = x
+                        if craft_it or black_list_edit then
+                            local x = subgroup_frame.add({
+                                type = "sprite-button",
+                                name = "mbm_btn_sel_elem=" .. item.name,
+                                sprite = sprite_type .. "/" .. item.name,
+                                style = 'slot_button',
+                                number = number,
+                                tooltip = { '', price_txt, ' - ', item.localised_name }
+                            })
+                            price_sprite_button_list[item.name] = x
+                        end
                     end
                 end
             end
@@ -1469,29 +1499,125 @@ local function close_price_change_gui(create, player, reset)
     update_objects_prices_start()
     update_objects_prices()
     update_groups()
-    if price_sprite_button_list then
-        local oldprice = 0
-        local price_txt = format_money(oldprice)
-        local _type = nil
-        local _item = nil
-        for k, item in pairs(price_sprite_button_list) do
-            _type = prototypes.fluid[k] and "fluid" or "item"
-            if _type == 'fluid' then
-                _item = prototypes.fluid[k]
-            else
-                _item = prototypes.item[k]
-            end
-            oldprice = 0
-            if storage.prices[_item.name] then
-                oldprice = storage.prices[_item.name].current
-            end
-            price_txt = format_money(oldprice)
-            if item.valid then
-                item.tooltip = { '', price_txt, ' - ', _item.localised_name }
 
+end
+local enc_list = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+-- Funzione di encoding
+local function base64_encode(data)
+    return ((data:gsub('.', function(x)
+        local r, bcode = '', x:byte()
+        for i = 8, 1, -1 do
+            r = r .. (bcode % 2 ^ i - bcode % 2 ^ (i - 1) > 0 and '1' or '0')
+        end
+        return r
+    end) .. '0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+        if (#x < 6) then
+            return ''
+        end
+        local c = 0
+        for i = 1, 6 do
+            c = c + (x:sub(i, i) == '1' and 2 ^ (6 - i) or 0)
+        end
+        return enc_list:sub(c + 1, c + 1)
+    end) .. ({ '', '==', '=' })[#data % 3 + 1])
+end
+
+-- Funzione di decoding
+local function base64_decode(data)
+    data = string.gsub(data, '[^' .. enc_list .. '=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then
+            return ''
+        end
+        local r, f = '', (enc_list:find(x) - 1)
+        for i = 6, 1, -1 do
+            r = r .. (f % 2 ^ i - f % 2 ^ (i - 1) > 0 and '1' or '0')
+        end
+        return r
+    end)        :gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if (#x ~= 8) then
+            return ''
+        end
+        local c = 0
+        for i = 1, 8 do
+            c = c + (x:sub(i, i) == '1' and 2 ^ (8 - i) or 0)
+        end
+        return string.char(c)
+    end))
+end
+local function export_settings(settings_table)
+    return serpent.dump(settings_table)
+end
+local function import_settings(serialized_string)
+    local ok, settings_table = serpent.load(serialized_string)
+    if ok then
+        return settings_table
+    else
+        print("Error during import!")
+    end
+end
+local export_inport_textbox = nil
+local function draw_import_export_gui(player)
+    --TODO ADD SETTING FOR QUALITY CREATED BUY ONLY
+    --TODO QUALITY ENABLE -> MODIFY SOTRAGE.PRICE -> ADD QUALITY UNLOCK CHECKING
+    if not player.gui.screen['zra_elem_menu'] then
+        return
+    end
+
+    if player.gui.screen['zra_price_save_menu'] then
+        player.gui.screen['zra_price_save_menu'].destroy()
+    end
+    local main_window = player.gui.screen.add { type = 'frame', caption = 'Import/Export :', name = 'zra_price_save_menu' }
+    main_window.location = { x = player.gui.screen['zra_elem_menu'].location.x + 100, y = player.gui.screen['zra_elem_menu'].location.y + 280 }
+    local main_window = main_window.add({ type = "flow", direction = "vertical" })
+    main_window.style.horizontal_align = 'center'
+    main_window.style.width = 250
+    main_window.add { type = 'label', caption = 'Copy and paste string :' }
+    export_inport_textbox = main_window.add { type = 'text-box', name = 'import_export_txt', text = 'Input text or click export' }
+    export_inport_textbox.text = base64_encode(export_settings({ version, storage.market_black_list or {}, storage.market_modified_prices or {} }))
+    export_inport_textbox.style.height = 100
+    main_window = main_window.add { type = 'table', column_count = 3, name = 'tbl_price_modify' }
+    local btn = main_window.add { type = 'button', caption = 'Import', name = 'btn_import_vars' }
+    btn.style.width = 80
+    --btn = main_window.add { type = 'button', caption = 'Export', name = 'btn_export_vars' }
+    --btn.style.width = 80
+    btn = main_window.add { type = 'button', caption = 'Cancel', name = 'btn_price_cancel' }
+    btn.style.width = 80
+end
+
+local function set_craft_to_unlock(entity, stk)
+    storage.craft_to_unlock = storage.craft_to_unlock or {}
+    storage.craft_to_quality_max = storage.craft_to_quality_max or 1
+    entity = entity or nil
+    stk = stk or nil
+    local item = nil
+    if entity then
+        item = entity
+    end
+    if stk then
+        item = stk
+    end
+    if item then
+        storage.craft_to_unlock[item.name] = storage.craft_to_unlock[item.name] or 0
+        if item.quality then
+            if item.quality.name then
+                if (quality_type[item.quality.name] + 1) > storage.craft_to_unlock[item.name] then
+                    storage.craft_to_unlock[item.name] = (quality_type[item.quality.name] + 1)
+                end
+            else
+                if (quality_type[item.quality] + 1) > storage.craft_to_unlock[item.name] then
+                    storage.craft_to_unlock[item.name] = (quality_type[item.quality] + 1)
+                end
             end
+        else
+            storage.craft_to_unlock[item.name] = quality_type[quality_type[1]]
+        end
+        if storage.craft_to_unlock[item.name] > storage.craft_to_quality_max then
+            storage.craft_to_quality_max = storage.craft_to_unlock[item.name]
         end
     end
+
 end
 --------------------------------------------------------------------------------------
 local function open_gui_event(event)
@@ -1585,6 +1711,7 @@ script.on_event(defines.events.on_gui_closed, close_gui_event)
 local function on_creation(event)
 
     local ent = event.entity
+    set_craft_to_unlock(ent, nil, nil)
     local ent_name = ent.name
     --local player = game.players[event.player_index]
     --local surface = game.players[event.player_index].physical_surface
@@ -1659,8 +1786,8 @@ end
 script.on_event(defines.events.on_player_cursor_stack_changed, function(event)
     local player = game.get_player(event.player_index)
     local cursor_stack = player.cursor_stack
-
     if cursor_stack and cursor_stack.valid_for_read and cursor_stack.valid then
+        set_craft_to_unlock(false, cursor_stack, false)
         show_custom_tooltip(player, cursor_stack)
     else
         gui_money_counter_update()
@@ -1677,13 +1804,24 @@ local function on_click(event)
     local catbtn = catsplit[1] or nil
     local cat_id = catsplit[2] or nil
     if btn == 'btn_money_counter' and market_opened == nil then
+        local surface = game.players[1].surface
+        local item_statistics = game.players[1].force.get_item_production_statistics(surface)
+        --TODO MODIFY QLT SEARCH
+        --on_player_crafted_item  -?
         modify_item_enabled_admin = false
+        modify_item_enabled_action = false
         modify_price_admin = false
         if player.gui.screen['zra_elem_menu'] then
             player.gui.screen['zra_elem_menu'].destroy()
         end
         if player.gui.relative["zra_market_menu"] then
             player.gui.relative["zra_market_menu"].destroy()
+        end
+        if player.gui.screen['zra_price_edit_menu'] then
+            player.gui.screen['zra_price_edit_menu'].destroy()
+        end
+        if player.gui.screen['zra_price_save_menu'] then
+            player.gui.screen['zra_price_save_menu'].destroy()
         end
         player.opened = nil
         market_opened = nil
@@ -1735,6 +1873,14 @@ local function on_click(event)
             end
         end
     end
+    if btn == 'btn_settings_hide_item' then
+        modify_item_enabled_action = not modify_item_enabled_action
+        if modify_item_enabled_action then
+            event.element.sprite = 'mbm-item-dsbl-stg-e'
+        else
+            event.element.sprite = 'mbm-item-dsbl-stg'
+        end
+    end
     if btn == 'btn_price_settings_elemsel' then
         if market_opened == nil and player.admin then
             modify_price_admin = not modify_price_admin
@@ -1747,7 +1893,7 @@ local function on_click(event)
     end
     if catbtn == 'mbm_btn_sel_elem' then
 
-        if player.gui.screen['zra_elem_menu'] and market_opened == nil and player.admin and modify_item_enabled_admin and player.opened == nil then
+        if player.gui.screen['zra_elem_menu'] and market_opened == nil and player.admin and modify_item_enabled_action and not modify_price_admin and player.opened == nil then
             storage.market_black_list = storage.market_black_list or {}
             if storage.market_black_list[cat_id] then
                 print('MBM Enable: ' .. cat_id .. ' by : ' .. player.name)
@@ -1759,8 +1905,7 @@ local function on_click(event)
                 event.element.number = 0
             end
         end
-        if player.gui.screen['zra_elem_menu'] and market_opened == nil and player.admin and modify_price_admin and player.opened == nil then
-
+        if player.gui.screen['zra_elem_menu'] and market_opened == nil and player.admin and modify_price_admin and not modify_item_enabled_action and player.opened == nil then
             draw_price_change_gui(cat_id, player)
         end
     end
@@ -1779,10 +1924,92 @@ local function on_click(event)
     if btn == 'btn_price_settings_reset_elemsel' then
         close_price_change_gui(false, player, true)
     end
+    if btn == 'btn_price_load_save_elemsel' then
+
+        draw_import_export_gui(player)
+    end
+    --if btn == 'btn_export_vars' then
+    --    export_inport_textbox.text = base64_encode(export_settings({ version, storage.market_black_list or {}, storage.market_modified_prices or {} }))
+    --end
+    if btn == 'btn_import_vars' then
+
+        local import = import_settings(base64_decode(export_inport_textbox.text))
+        if import then
+            if import[1] == '1.1.1' then
+                storage.market_black_list = import[2]
+                storage.market_modified_prices = import[3]
+
+            end
+        end
+        if storage.market_modified_prices then
+
+            configure_settings()
+            for k, v in pairs(storage.market_modified_prices) do
+                vanilla_resources_prices[k] = v
+            end
+            fill_quality_type()
+            tax_pay = stg_tax_rate / 100
+            if stg_tax_enable == false then
+                tax_pay = 0
+            end
+            init_storages()
+            update_objects_prices_start()
+            update_objects_prices()
+            update_groups()
+            if price_sprite_button_list then
+                local oldprice = 0
+                local price_txt = format_money(oldprice)
+                local _type = nil
+                local _item = nil
+                for k, item in pairs(price_sprite_button_list) do
+                    _type = prototypes.fluid[k] and "fluid" or "item"
+                    if _type == 'fluid' then
+                        _item = prototypes.fluid[k]
+                    else
+                        _item = prototypes.item[k]
+                    end
+                    oldprice = 0
+                    if storage.prices[_item.name] then
+                        oldprice = storage.prices[_item.name].current
+                    end
+                    price_txt = format_money(oldprice)
+                    if item.valid then
+                        item.tooltip = { '', price_txt, ' - ', _item.localised_name }
+
+                    end
+                end
+            end
+        end
+        if storage.market_black_list then
+            modify_item_enabled_admin = false
+            modify_price_admin = false
+            if player.gui.screen['zra_price_save_menu'] then
+                player.gui.screen['zra_price_save_menu'].destroy()
+            end
+            if player.gui.screen['zra_elem_menu'] then
+                player.gui.screen['zra_elem_menu'].destroy()
+            end
+            if player.gui.relative["zra_market_menu"] then
+                player.gui.relative["zra_market_menu"].destroy()
+            end
+            if player.gui.screen['zra_price_edit_menu'] then
+                player.gui.screen['zra_price_edit_menu'].destroy()
+            end
+            player.opened = nil
+            market_opened = nil
+            draw_elem_gui({}, player, true)
+
+        end
+
+    end
     if btn == 'btn_price_cancel' then
         price_item_name = nil
         price_txt_price = nil
         price_localized = nil
+
+        if player.gui.screen['zra_price_save_menu'] then
+            player.gui.screen['zra_price_save_menu'].destroy()
+        end
         if player.gui.screen['zra_price_edit_menu'] then
             player.gui.screen['zra_price_edit_menu'].destroy()
         end
@@ -1796,6 +2023,9 @@ local function on_click(event)
         end
         if player.gui.screen['zra_elem_menu'] then
             player.gui.screen['zra_elem_menu'].destroy()
+        end
+        if player.gui.screen['zra_price_save_menu'] then
+            player.gui.screen['zra_price_save_menu'].destroy()
         end
     end
     if market_opened == nil then
@@ -1883,9 +2113,36 @@ local function on_click(event)
 
         if player.gui.screen['zra_elem_menu'] and player.gui.relative['zra_market_menu'] then
             if market_opened.type == market_type.item then
-
                 market_opened.orders[content_select_order_id].item = cat_id
                 market_opened.orders[content_select_order_id].item_btn.sprite = event.element.sprite
+                local items_dropdown = {}
+                market_opened.orders[content_select_order_id].max_quality = nil
+                if craft_it_to_buy_stg then
+                    market_opened.orders[content_select_order_id].max_quality = storage.craft_to_unlock[market_opened.orders[content_select_order_id].item] or 1
+                end
+                for i = 1, #quality_type do
+                    if player.force.is_quality_unlocked(quality_type[i]) or unknown_quality_enable then
+                        if market_opened.orders[content_select_order_id].max_quality == nil then
+                            table.insert(items_dropdown, i, '[quality=' .. quality_type[i] .. ']')
+                        else
+                            if i < market_opened.orders[content_select_order_id].max_quality then
+                                table.insert(items_dropdown, i, '[quality=' .. quality_type[i] .. ']')
+                            else
+                                break
+                            end
+                        end
+                    end
+                end
+
+                if next(items_dropdown) == nil then
+                    items_dropdown[1] = ' '
+                    market_opened.orders[content_select_order_id].quality = 1
+                end
+                if market_opened.orders[content_select_order_id].quality >= #items_dropdown then
+                    market_opened.orders[content_select_order_id].quality = #items_dropdown
+                end
+                market_opened.orders[content_select_order_id].drop_down_element.items = items_dropdown
+                market_opened.orders[content_select_order_id].drop_down_element.selected_index = market_opened.orders[content_select_order_id].quality
             elseif market_opened.type == market_type.fluid then
                 market_opened.orders[1].item = cat_id
                 market_opened.orders[1].item_btn.sprite = event.element.sprite
@@ -2165,6 +2422,9 @@ local function on_tick(event)
                     local can_buy = false
                     if constant_enable then
                         can_buy = calculate_condition(signal_a, constant_b, sel_cond)
+                        if sel_cond == 3 and constant_b == 0 and market.type == market_type.fluid then
+                            can_buy = true
+                        end
                     elseif constant_enable == false then
                         can_buy = calculate_condition(signal_a, signal_b, sel_cond)
                     end
@@ -2262,13 +2522,21 @@ local function on_tick(event)
             if player.gui.screen['zra_elem_menu'] then
                 player.gui.screen['zra_elem_menu'].destroy()
             end
+
+            if player.gui.screen['zra_price_edit_menu'] then
+                player.gui.screen['zra_price_edit_menu'].destroy()
+            end
+
+            if player.gui.screen['zra_price_save_menu'] then
+                player.gui.screen['zra_price_save_menu'].destroy()
+            end
         end
     end
 end
 script.on_event(defines.events.on_tick, on_tick)
 
 -------------------------------------------------------------------------------------
-local function configure_settings_local()
+function configure_settings_local()
     configure_settings()
     fill_quality_type()
     tax_pay = stg_tax_rate / 100
@@ -2300,4 +2568,54 @@ local function initModSetting()
 
 end
 script.on_init(initModSetting)
+-------------------------------------------------------------------------------------
+script.on_event(defines.events.on_equipment_inserted, function(event)
+    local item = event.equipment
+    set_craft_to_unlock(false, item, false)
+end)
+script.on_event(defines.events.on_picked_up_item, function(event)
+    local item = event.item_stack
+    set_craft_to_unlock(false, item, false)
+end)
+script.on_event(defines.events.on_player_crafted_item, function(event)
+    local item = event.item_stack
+    set_craft_to_unlock(false, item, false)
+end)
+script.on_event(defines.events.on_player_mined_entity, function(event)
+    set_craft_to_unlock(event.entity, false, false)
+end)
+script.on_event(defines.events.on_player_mined_item, function(event)
+    local item = event.item_stack
+    set_craft_to_unlock(false, item, false)
+end)
+script.on_event(defines.events.on_player_placed_equipment, function(event)
+    local item = event.equipment
+    set_craft_to_unlock(false, item, false)
+end)
+script.on_event(defines.events.on_robot_mined, function(event)
+    local item = event.item_stack
+    set_craft_to_unlock(false, item, false)
+end)
+script.on_event(defines.events.on_robot_mined_entity, function(event)
+    local ent = event.entity
+    set_craft_to_unlock(ent, false, false)
+end)
+script.on_event(defines.events.on_space_platform_built_entity, function(event)
+    local ent = event.entity
+    set_craft_to_unlock(ent, false, false)
+end)
+script.on_event(defines.events.on_space_platform_mined_entity, function(event)
+    local ent = event.entity
+    set_craft_to_unlock(ent, false, false)
+end)
+script.on_event(defines.events.on_space_platform_mined_item, function(event)
+    local ent = event.item_stack
+    set_craft_to_unlock(ent, false, false)
+end)
+script.on_event(defines.events.on_player_main_inventory_changed, function(event)
+    local items_inv = game.players[event.player_index].get_inventory(defines.inventory.character_main).get_contents()
+    for k, v in pairs(items_inv) do
+        set_craft_to_unlock(false, v)
+    end
+end)
 -------------------------------------------------------------------------------------

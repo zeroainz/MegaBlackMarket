@@ -71,6 +71,22 @@ data:extend(
               height = 32,
               flags = { 'no-crop', 'icon' },
               scale = 0.3 },
+            { type = 'sprite',
+              name = 'mbm-item-dsbl-stg-e',
+              filename ="__MegaBlackMarket__/graphics/btn-item-dsbl-stg-e.png",
+              priority = 'extra-high-no-scale',
+              width = 32,
+              height = 32,
+              flags = { 'no-crop', 'icon' },
+              scale = 0.3 },
+            { type = 'sprite',
+              name = 'mbm-item-dsbl-stg',
+              filename ="__MegaBlackMarket__/graphics/btn-item-dsbl-stg.png",
+              priority = 'extra-high-no-scale',
+              width = 32,
+              height = 32,
+              flags = { 'no-crop', 'icon' },
+              scale = 0.3 },
         }
 )
 

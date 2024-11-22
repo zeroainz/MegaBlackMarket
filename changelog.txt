@@ -1,3 +1,11 @@
+Version: 1.2.0
+Date: 2024-11-18
+  Changes:
+    -   FIXED BUG WITH FLUID TANK DOESN'T SELL AUTOMATICALI WITH SELF INVENTORY = 0
+    -   CHANGED PRICE WATCHER GUI SETTINGS
+    -   ADDED SETTING TO BE ABLE TO BUY ONLY CRAFTED ITEM WITH QUALITY
+    -   ADDED IMPORT/EXPORT GUI FOR BLACK LIST AND MODIFIED PRICES SETTINGS
+---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 2024-11-20
   Changes:
